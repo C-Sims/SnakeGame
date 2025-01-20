@@ -60,6 +60,14 @@ public class SnakeProject extends Application {
         primaryStage.show();
     }
 
+    private void run(){
+        drawBackground();
+    }
+    
+    private void drawBackground(){
+        
+    }
+    
     /**
      * @param args the command line arguments
      */
