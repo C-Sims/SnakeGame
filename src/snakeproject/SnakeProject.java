@@ -7,6 +7,8 @@ package snakeproject;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -16,6 +18,8 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -23,6 +27,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 /**
  *
@@ -71,7 +76,9 @@ public class SnakeProject extends Application {
              
         StackPane root = new StackPane();       
         
-        Canvas canvasGame = new Canvas(WIDTH + SQUARE_SIZE, WIDTH + SQUARE_SIZE);
+        // Adding one SQUARE_SIZE to the width and height so it skips one 
+        // SQUARE_SIZE on the right and the bottom.
+        Canvas canvasGame = new Canvas(WIDTH + SQUARE_SIZE, HEIGHT + SQUARE_SIZE);
      
         root.getChildren().add(canvasGame);
         root.setStyle("-fx-background-color: #578A34");
@@ -81,11 +88,69 @@ public class SnakeProject extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
         gc = canvasGame.getGraphicsContext2D();
-        run();
+        
+        scene.setOnKeyPressed(new EventHandler<KeyEvent>(){
+            @Override
+            public void handle(KeyEvent event) {
+                KeyCode code = event.getCode();
+                // code == KeyCode.RIGHT
+                if(code == KeyCode.D){
+                    if(currentDirection != LEFT){
+                        currentDirection = RIGHT;
+                    }
+                // code == KeyCode.LEFT    
+                }else if(code == KeyCode.A ){
+                    if(currentDirection != RIGHT){
+                        currentDirection = LEFT;
+                    }
+                }else if(code == KeyCode.W){
+                    if(currentDirection != DOWN){
+                        currentDirection = UP;
+                    }
+                }else if(code == KeyCode.S){
+                    if(currentDirection != UP){
+                        currentDirection = DOWN;
+                    }
+                }
+            }
+            
+        });
+        
+        // Position of snake
+        for(int i = 0; i < 3; i++){
+            snakeBody.add(new Point(5, ROWS / 2));
+        }
+        
+        snakeHead = snakeBody.get(0);
+                
+        spawnApple();
+        Timeline timeline = new Timeline(new KeyFrame(Duration.millis(130), e->run(gc)));
     }
 
-    private void run(){
+    private void run(GraphicsContext gc){
         drawGameBackground(gc);
+        drawApple(gc);
+        drawSnake(gc);
+        
+        for(int i = snakeBody.size() -1; i >= 1; i--){
+            snakeBody.get(i).x = snakeBody.get(i - 1).x;
+            snakeBody.get(i).y = snakeBody.get(i - 1).y;
+        }
+        
+        switch(currentDirection){
+            case RIGHT:
+                moveRight();
+                break;
+            case LEFT:
+                moveLeft();
+                break;
+            case UP:
+                moveUp();
+                break;
+            case DOWN:
+                moveDown();
+                break;
+        }   
     }
     
     // Method that adds the background blocks where the game is played.
@@ -106,7 +171,64 @@ public class SnakeProject extends Application {
         }
     }
     
+    private void spawnApple(){
+        
+        // Point where the continue skips to.
+        start:
+        while(true){
+            foodX = (int) (Math.random() * ROWS );
+            foodY = (int) (Math.random() * COLUMNS);
+            
+            // If apple appears outside the zone of the game, start next while loop.
+            if(foodY == 0 || foodY == 1 || foodY == COLUMNS - 1 || foodX == 0 || foodX == ROWS - 1){
+                    continue;
+            }
+            
+            for(Point snake : snakeBody){
+                
+                // If apple collisions with snake body, start a new loop for the while loop, 
+                // instead of the for loop, using start: and continue start;
+                if(snake.getX() == foodX && snake.getY() == foodY){
+                    continue start;                               
+                }                
+                
+            }
+            break;
+        }
+        
+    }
     
+    private void drawApple(GraphicsContext gc){        
+        Image foodImage = new Image(APPLE_IMAGE);
+        gc.drawImage(foodImage, foodX * SQUARE_SIZE, foodY * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+    }
+    
+    private void drawSnake(GraphicsContext gc){
+        gc.setFill(Color.web("4674E9"));
+        gc.fillRoundRect(snakeHead.getX() * SQUARE_SIZE, snakeHead.getY() * SQUARE_SIZE, SQUARE_SIZE - 1, SQUARE_SIZE - 1, 35, 35);
+        
+        for (int i = 1; i < snakeBody.size(); i++) {
+            gc.fillRoundRect(snakeBody.get(i).getX() * SQUARE_SIZE, snakeBody.get(i).getY() * SQUARE_SIZE,
+                    SQUARE_SIZE - 1, SQUARE_SIZE - 1, 20, 20);
+        }
+        
+    }
+    
+    private void moveRight(){
+        snakeHead.x++;
+    }
+    
+    private void moveLeft(){
+        snakeHead.x--;
+    }
+    
+    private void moveUp(){
+        snakeHead.y--;
+    }
+    
+    private void moveDown(){
+        snakeHead.y++;
+    }
     
     /**
      * @param args the command line arguments
